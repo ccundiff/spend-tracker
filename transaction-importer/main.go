@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/ccundiff/spend-tracker/transaction-importer/client"
 	"github.com/ccundiff/spend-tracker/transaction-importer/config"
 	"github.com/ccundiff/spend-tracker/transaction-importer/handler"
+	spendsummaries "github.com/ccundiff/spend-tracker/transaction-importer/spend-summaries"
 	"github.com/ccundiff/spend-tracker/transaction-importer/transactions"
 	"github.com/ccundiff/spend-tracker/transaction-importer/users"
 	f "github.com/fauna/faunadb-go/v4/faunadb"
@@ -39,7 +41,8 @@ func init() {
 		plaidClient,
 	)
 	usersService := users.NewUsersService(faunaClient)
-	transactionImportHandler = handler.NewTranscationImportHandler(faunaClient, plaidClient, twilioClient,  usersService, transactionsService)
+	spendSummariesService := spendsummaries.NewSpendSummariesService(faunaClient, transactionsService)
+	transactionImportHandler = handler.NewTranscationImportHandler(twilioClient, usersService, transactionsService, spendSummariesService)
 }
 
 func HandleRequest(ctx context.Context) (string, error) {

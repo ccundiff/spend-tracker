@@ -2,9 +2,6 @@ package spendsummaries
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/ccundiff/spend-tracker/transaction-importer/constants"
 	"github.com/ccundiff/spend-tracker/transaction-importer/timeutil"
 	"github.com/ccundiff/spend-tracker/transaction-importer/transactions"
 	"github.com/ccundiff/spend-tracker/transaction-importer/users"
@@ -13,66 +10,46 @@ import (
 )
 
 type SpendSummariesService struct {
-	dbClient *f.FaunaClient
+	dbClient            *f.FaunaClient
 	transactionsService *transactions.TransactionsService
 }
 
 func NewSpendSummariesService(dbClient *f.FaunaClient, transactionsService *transactions.TransactionsService) *SpendSummariesService {
 	return &SpendSummariesService{
-		dbClient: dbClient,
+		dbClient:            dbClient,
 		transactionsService: transactionsService,
 	}
 }
 
-func (s *SpendSummariesService) CreateDailySpendSummary(user users.User, date string) (DailySpendSummary, error) {
+func (s *SpendSummariesService) CreateDailySpendSummary(user users.User, date string) (DailySpendSummary, []transactions.Transaction, error) {
 	txns, err := s.transactionsService.TransactionsForDate(date)
 	if err != nil {
-		return DailySpendSummary{}, errors.Wrapf(err, "Failed to pull txn when creating daily spend summaries, err=%v", err)
+		return DailySpendSummary{}, nil, errors.Wrapf(err, "Failed to pull txn when creating daily spend summaries, err=%v", err)
 	}
 	spendTotal := float32(0)
 	for _, txn := range txns {
+		fmt.Printf("Txn %v=\n", txn)
 		spendTotal += txn.Amount
 	}
 
-	timeDate, err := time.Parse(constants.DATE_FORMAT, date)
+	runningSpendDiff, err := s.getToDateMonthlySpend(date)
 	if err != nil {
-		return DailySpendSummary{}, errors.Wrapf(err, "Failed to parse date when creating dss, err=%v", err)
+		return DailySpendSummary{}, nil, err
 	}
 
-	month := int(timeDate.Month())
-
+	month, err := timeutil.GetMonthFromDateString(date)
 	if err != nil {
-		// TODO: should I wrap this?
-		return DailySpendSummary{}, err
-	}
-
-	readResp, err := s.dbClient.Query(
-		f.Select("data",
-			f.Reduce(f.Lambda(f.Arr{"acc", "val"}, f.Add(f.Var("acc"), f.Var("val"))),
-				0,
-				f.Map(f.Paginate(f.MatchTerm(f.Index("daily_spend_summaries_by_month"), month)),
-					f.Lambda("ref", f.Select(f.Arr{"data", "spendDiff"}, f.Get(f.Var("ref"))))),
-			),
-		),
-	)
-	var runningSpendDiff []float32
-	if err = readResp.Get(&runningSpendDiff); err != nil {
-		panic(fmt.Sprintf("error reading spend diff from response, %v", err))
-	}
-
-	if err != nil {
-		// TODO: handle error better?
-		return DailySpendSummary{}, err
+		return DailySpendSummary{}, nil, err
 	}
 
 	dailySpendSummary := DailySpendSummary{
-		Date: date,
-		Month: int(timeDate.Month()),
-		SpendGoal: user.DailySpendGoal,
-		UserId: user.Id,
-		TotalSpend: spendTotal,
-		SpendDiff: float32(user.DailySpendGoal) - spendTotal,
-		ToDateMonthSpendDiff: &runningSpendDiff[0],
+		Date:                 date,
+		Month:                month,
+		SpendGoal:            user.DailySpendGoal,
+		UserId:               user.Id,
+		TotalSpend:           spendTotal,
+		SpendDiff:            float32(user.DailySpendGoal) - spendTotal,
+		ToDateMonthSpendDiff: &runningSpendDiff,
 	}
 
 	// TODO: need to account for user id here as well....
@@ -91,6 +68,32 @@ func (s *SpendSummariesService) CreateDailySpendSummary(user users.User, date st
 		),
 	)
 
+	if err != nil {
+		return DailySpendSummary{}, nil, errors.Wrapf(err, "Error creating/updating daily spend summary, %v", err)
+	}
+
 	// TODO: I think I may need to do more here to craft the text
-	return dailySpendSummary, nil
+	return dailySpendSummary, txns, nil
+}
+
+func (s *SpendSummariesService) getToDateMonthlySpend(date string) (float32, error) {
+	month, err := timeutil.GetMonthFromDateString(date)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Failed to parse date when creating dss, err=%v", err)
+	}
+
+	readResp, err := s.dbClient.Query(
+		f.Select("data",
+			f.Reduce(f.Lambda(f.Arr{"acc", "val"}, f.Add(f.Var("acc"), f.Var("val"))),
+				0,
+				f.Map(f.Paginate(f.MatchTerm(f.Index("daily_spend_summaries_by_month"), month)),
+					f.Lambda("ref", f.Select(f.Arr{"data", "spendDiff"}, f.Get(f.Var("ref"))))),
+			),
+		),
+	)
+	var runningSpendDiff []float32
+	if err = readResp.Get(&runningSpendDiff); err != nil {
+		return 0, errors.Wrapf(err, "error reading spend diff from response, %v", err)
+	}
+	return runningSpendDiff[0], nil
 }

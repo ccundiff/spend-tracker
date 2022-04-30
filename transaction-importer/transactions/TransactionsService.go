@@ -9,12 +9,12 @@ import (
 )
 
 type Transaction struct {
-	Merchant string `fauna:"merchant"`
-	Amount float32 `fauna:"amount"`
+	Merchant string  `fauna:"merchant"`
+	Amount   float32 `fauna:"amount"`
 }
 
 type TransactionsService struct {
-	DbClient *f.FaunaClient
+	DbClient    *f.FaunaClient
 	PlaidClient *plaid.APIClient
 }
 
@@ -87,7 +87,7 @@ func (t *TransactionsService) TransactionsForDate(date string) ([]Transaction, e
 			f.Let().Bind("txn", f.Get(f.Var("txnRef"))).In(
 				f.Obj{
 					"merchant": f.Select(f.Arr{"data", "merchant"}, f.Var("txn")),
-					"amount": f.Select(f.Arr{"data", "amount"}, f.Var("txn")),
+					"amount":   f.Select(f.Arr{"data", "amount"}, f.Var("txn")),
 				},
 			),
 		),
@@ -105,7 +105,5 @@ func (t *TransactionsService) TransactionsForDate(date string) ([]Transaction, e
 		return nil, err
 	}
 
-	fmt.Printf("%+v", parsedTxns)
-
-	return nil, nil
+	return parsedTxns, nil
 }
