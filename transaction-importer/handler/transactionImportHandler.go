@@ -8,24 +8,9 @@ import (
 	"github.com/ccundiff/spend-tracker/transaction-importer/timeutil"
 	"github.com/ccundiff/spend-tracker/transaction-importer/transactions"
 	"github.com/ccundiff/spend-tracker/transaction-importer/users"
-	f "github.com/fauna/faunadb-go/v4/faunadb"
 	"strings"
 	"time"
 )
-
-type Transaction struct {
-	Merchant string
-	Amount   float32
-}
-
-type DailySpendSummary struct {
-	Date       string  `fauna:"date"`
-	Month      int     `fauna:"month"`
-	SpendGoal  int     `fauna:"spendGoal"`
-	UserRef    f.RefV  `fauna:"userRef"`
-	TotalSpend float32 `fauna:"totalSpend"`
-	SpendDiff  float32 `fauna:"spendDiff"`
-}
 
 type TransactionImportHandler struct {
 	twilioClient        *client.TwilioClient
