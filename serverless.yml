@@ -24,7 +24,7 @@ plugins:
   - "@fauna-labs/serverless-fauna"
 fauna:
   client:
-    secret: fnAEik0plVAARGpCEl1Sn6M2nxlX-kbLQSg_9nHf
+    secret:
     domain: db.us.fauna.com
     # port: 433
     # scheme: https
