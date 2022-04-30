@@ -9,7 +9,6 @@ import (
 	"github.com/ccundiff/spend-tracker/transaction-importer/transactions"
 	"github.com/ccundiff/spend-tracker/transaction-importer/users"
 	"strings"
-	"time"
 )
 
 type TransactionImportHandler struct {
@@ -37,13 +36,9 @@ func (t *TransactionImportHandler) Handle() (string, error) {
 		panic(fmt.Sprintf("unable to get user, err=[%v]", err))
 	}
 
-	const iso8601TimeFormat = "2006-01-02"
-	//startDate := time.Now().Add(-24 * time.Hour).Format(iso8601TimeFormat)
-	// TODO: this should be set on the user object
-	loc, _ := time.LoadLocation("America/New_York")
-	currentTime := time.Now().In(loc)
-	println(currentTime.Format(iso8601TimeFormat))
-
+	// TODO: timezone should be set on the user object
+	// could also just run it for previous day and not really worry about timezones
+	// could have user set their desired notificaiton time
 	err = t.transactionsService.ImportTransactions(user, timeutil.EastCoastCurrentDateAsString())
 	if err != nil {
 		return "error importing txns", err
@@ -68,11 +63,11 @@ func (t *TransactionImportHandler) Handle() (string, error) {
 	)
 	println(dailySpendMessage)
 
+	// TODO: phone number stored with user
 	if err = t.twilioClient.SendText("+12692088780", dailySpendMessage); err != nil {
 		fmt.Printf("Error sending text, %v", err)
 		return "failed to send text", err
 	}
 
-	//return fmt.Sprintf("created txns, %v", createTxns), err
 	return fmt.Sprintf("created txns"), err
 }
