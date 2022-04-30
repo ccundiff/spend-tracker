@@ -24,7 +24,7 @@ plugins:
   - "@fauna-labs/serverless-fauna"
 fauna:
   client:
-    secret:
+    secret: ${env:SPEND_TRACKING_DB_KEY}
     domain: db.us.fauna.com
     # port: 433
     # scheme: https
