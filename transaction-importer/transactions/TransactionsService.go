@@ -11,6 +11,7 @@ import (
 type Transaction struct {
 	Merchant string  `fauna:"merchant"`
 	Amount   float32 `fauna:"amount"`
+	Excluded bool    `fauna:"excluded"`
 }
 
 type TransactionsService struct {
@@ -88,6 +89,7 @@ func (t *TransactionsService) TransactionsForDate(date string) ([]Transaction, e
 				f.Obj{
 					"merchant": f.Select(f.Arr{"data", "merchant"}, f.Var("txn")),
 					"amount":   f.Select(f.Arr{"data", "amount"}, f.Var("txn")),
+					"excluded": f.Select(f.Arr{"data", "excluded"}, f.Var("txn"), f.Default(false)),
 				},
 			),
 		),

@@ -53,13 +53,15 @@ func (t *TransactionImportHandler) Handle() (string, error) {
 		return fmt.Sprintf("%v : $%v", value.Merchant, value.Amount)
 	})
 
+	toDateMonthSurplus := user.MonthlyIncome - *dailySpendSummary.ToDateMonthSpend
+
 	dailySpendMessage := fmt.Sprintf(
 		"Total Day Spend: $%v \n\n"+
 			"Day Spend Diff: $%v \n\n"+
 			"Transactions: \n"+
 			"%v \n\n"+
 			"To Date Monthly Surplus: $%v",
-		dailySpendSummary.TotalSpend, dailySpendSummary.SpendDiff, strings.Join(txnsString, "\n"), *dailySpendSummary.ToDateMonthSpendDiff,
+		dailySpendSummary.TotalSpend, dailySpendSummary.SpendDiff, strings.Join(txnsString, "\n"), toDateMonthSurplus,
 	)
 	println(dailySpendMessage)
 

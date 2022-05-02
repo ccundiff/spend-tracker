@@ -5,7 +5,7 @@ import (
 )
 
 type UserService struct {
-	dbClient  *f.FaunaClient
+	dbClient *f.FaunaClient
 }
 
 func NewUsersService(dbClient *f.FaunaClient) *UserService {
@@ -16,11 +16,12 @@ func (u *UserService) GetUser() (User, error) {
 	userRes, err := u.dbClient.Query(
 		f.Let().Bind("user", f.Get(f.Ref(f.Collection("Users"), "326065743220179012"))).In(
 			f.Obj{
-				"ref":         f.Select("ref", f.Var("user")),
-				"name":        f.Select(f.Arr{"data", "name"}, f.Var("user")),
-				"accessToken": f.Select(f.Arr{"data", "accessToken"}, f.Var("user")),
-				"itemId":      f.Select(f.Arr{"data", "itemId"}, f.Var("user")),
+				"ref":            f.Select("ref", f.Var("user")),
+				"name":           f.Select(f.Arr{"data", "name"}, f.Var("user")),
+				"accessToken":    f.Select(f.Arr{"data", "accessToken"}, f.Var("user")),
+				"itemId":         f.Select(f.Arr{"data", "itemId"}, f.Var("user")),
 				"dailySpendGoal": f.Select(f.Arr{"data", "dailySpendGoal"}, f.Var("user")),
+				"monthlyIncome":  f.Select(f.Arr{"data", "monthlyIncome"}, f.Var("user")),
 			},
 		),
 	)

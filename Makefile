@@ -2,6 +2,7 @@
 
 build:
 	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/transaction-importer transaction-importer/*.go
+	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/webservice service/*.go
 
 clean:
 	rm -rf ./bin ./vendor Gopkg.lock
