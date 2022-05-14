@@ -39,12 +39,12 @@ func (t *TransactionImportHandler) Handle() (string, error) {
 	// TODO: timezone should be set on the user object
 	// could also just run it for previous day and not really worry about timezones
 	// could have user set their desired notificaiton time
-	err = t.transactionsService.ImportTransactions(user, timeutil.EastCoastCurrentDateAsString())
+	err = t.transactionsService.ImportTransactions(user, timeutil.EastCoastYesterdaysDateAsString())
 	if err != nil {
 		return "error importing txns", err
 	}
 
-	dailySpendSummary, txns, err := t.spendSummaryService.CreateDailySpendSummary(user, timeutil.EastCoastCurrentDateAsString())
+	dailySpendSummary, txns, err := t.spendSummaryService.CreateDailySpendSummary(user, timeutil.EastCoastYesterdaysDateAsString())
 	if err != nil {
 		return "err creating daily spend summary", err
 	}
@@ -56,12 +56,12 @@ func (t *TransactionImportHandler) Handle() (string, error) {
 	toDateMonthSurplus := user.MonthlyIncome - *dailySpendSummary.ToDateMonthSpend
 
 	dailySpendMessage := fmt.Sprintf(
-		"Total Day Spend: $%v \n\n"+
+		"Total Day Spend on %v: $%v \n\n"+
 			"Day Spend Diff: $%v \n\n"+
 			"Transactions: \n"+
 			"%v \n\n"+
 			"To Date Monthly Surplus: $%v",
-		dailySpendSummary.TotalSpend, dailySpendSummary.SpendDiff, strings.Join(txnsString, "\n"), toDateMonthSurplus,
+		timeutil.EastCoastYesterdaysDateAsString(), dailySpendSummary.TotalSpend, dailySpendSummary.SpendDiff, strings.Join(txnsString, "\n"), toDateMonthSurplus,
 	)
 	println(dailySpendMessage)
 

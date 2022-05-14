@@ -9,16 +9,16 @@ import (
 
 // TODO: the location should be set on the user object, right now I'm just passing
 // new york it everywhere
-func CurrentDateAsString(location string) string {
+func YesterdaysDateAsString(location string) string {
 	//startDate := time.Now().Add(-24 * time.Hour).Format(iso8601TimeFormat)
 	// TODO: need to handle error here
 	loc, _ := time.LoadLocation(location)
-	currentTime := time.Now().In(loc)
+	currentTime := time.Now().Add(-24 * time.Hour).In(loc)
 	return currentTime.Format(constants.DATE_FORMAT)
 }
 
-func EastCoastCurrentDateAsString() string {
-	return CurrentDateAsString(constants.EAST_COAST_TIME_LOCATION)
+func EastCoastYesterdaysDateAsString() string {
+	return YesterdaysDateAsString(constants.EAST_COAST_TIME_LOCATION)
 }
 
 func GetMonthFromDateString(date string) (int, error) {

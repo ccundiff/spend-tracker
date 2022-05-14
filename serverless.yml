@@ -100,7 +100,7 @@ functions:
   transaction-importer:
     handler: bin/transaction-importer
     events:
-      - schedule: cron(50, 3, *, *, ?, *)
+      - schedule: cron(0, 5, *, *, ?, *)
 #    events:
 #      - httpApi:
 #          path: /hello
