@@ -25,7 +25,7 @@ func NewSpendSummariesService(dbClient *f.FaunaClient, transactionsService *tran
 
 func (s *SpendSummariesService) CreateDailySpendSummary(user users.User, date string) (DailySpendSummary, []transactions.Transaction, error) {
 	txns, err := s.transactionsService.TransactionsForDate(date)
-	slice.Filter(txns, func(txn transactions.Transaction) bool {
+	txns = slice.Filter(txns, func(txn transactions.Transaction) bool {
 		return !txn.Excluded
 	})
 	if err != nil {
@@ -111,10 +111,10 @@ func (s *SpendSummariesService) getToDateMonthlySpend(date string) (float32, err
 			f.Reduce(f.Lambda(f.Arr{"acc", "val"}, f.Add(f.Var("acc"), f.Var("val"))),
 				0,
 				f.Map(f.Paginate(f.MatchTerm(f.Index("daily_spend_summaries_by_month"), month)),
-					f.Lambda("ref", f.Select(f.Arr{"data", "totalSpend"}, f.Get(f.Var("ref"))))),
+					f.Lambda("ref", f.Select(f.Arr{"data", "totalSpend"}, f.Get(f.Var("ref")))),
+				),
 			),
-		),
-	)
+		))
 	var runningSpendTotal []float32
 	if err = readResp.Get(&runningSpendTotal); err != nil {
 		return 0, errors.Wrapf(err, "error reading spend diff from response, %v", err)
