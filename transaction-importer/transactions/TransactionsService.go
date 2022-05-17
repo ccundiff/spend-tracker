@@ -51,21 +51,38 @@ func (t *TransactionsService) ImportTransactions(user users.User, date string) e
 	createStatements := make([]f.Expr, len(transactionsResp.Transactions))
 
 	for _, txn := range transactionsResp.Transactions {
-		createStatements = append(createStatements,
-			f.If(
-				f.Not(f.Exists(f.MatchTerm(f.Index("transactions_by_plaid_id"), txn.TransactionId))),
-				f.Create(f.Collection("Transactions"), f.Obj{
-					"data": f.Obj{
-						"plaidTransactionId": txn.TransactionId,
-						"merchant":           txn.Name,
-						"amount":             txn.Amount,
-						"user":               user.Id,
-						"date":               txn.Date,
-					},
-				}),
-				// todo: do I want to update here?
-				f.Null(),
-			))
+		// TODO: this currently just takes the first time the txn gets posted and uses that as authoritative.  This will be accurate most of the time
+		// but the pending and closed txn amounts could change which this won't account for
+		// This should work but I don't seem to be getting a pending transaction id for certain transactions... wtf plaid
+		ifCreateExpr := f.Not(f.Exists(f.MatchTerm(f.Index("transactions_by_plaid_id"), txn.TransactionId)))
+		// if txn.PendingTransactionId.IsSet() {
+		// 	fmt.Printf("PENDING : %v", txn.PendingTransactionId.Get())
+		// 	ifCreateExpr = f.And(f.Not(f.Exists(f.MatchTerm(f.Index("transactions_by_plaid_id"), txn.TransactionId))),
+		// 		f.Not(f.Exists(f.MatchTerm(f.Index("transactions_by_plaid_id"), txn.PendingTransactionId.Get()))))
+		// }
+		//
+		//
+		//
+		//
+		// Use authorized date to not double count, since I pull every day will pull when its authorized, and don't want to recount the closed txn later
+		if txn.GetAuthorizedDate() == date {
+			createStatements = append(createStatements,
+				f.If(
+					// f.Not(f.Exists(f.MatchTerm(f.Index("transactions_by_plaid_id"), txn.TransactionId))),
+					ifCreateExpr,
+					f.Create(f.Collection("Transactions"), f.Obj{
+						"data": f.Obj{
+							"plaidTransactionId": txn.TransactionId,
+							"merchant":           txn.Name,
+							"amount":             txn.Amount,
+							"user":               user.Id,
+							"date":               txn.Date,
+						},
+					}),
+					// todo: do I want to update here?
+					f.Null(),
+				))
+		}
 	}
 
 	_, err = t.DbClient.Query(
